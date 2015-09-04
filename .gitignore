@@ -1,1 +1,2 @@
-data
+data/*.xls
+data/*.xlsx
