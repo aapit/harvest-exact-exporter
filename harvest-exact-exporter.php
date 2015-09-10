@@ -5,6 +5,10 @@ date_default_timezone_set('Europe/Amsterdam');
 
 $path = $argv[1];
 $sheet = new HarvestSheet($path);
+$sheet->removeColumns(array(
+	'Billable?', 'Invoiced?', 'Approved?', 'Employee?', 'Billable Rate',
+	'Billable Amount', 'Cost Rate', 'Cost Amount', 'Currency'
+));
 $sheet->splitColumn('B', 'Client Code');
 $sheet->output();
 
@@ -17,10 +21,6 @@ class HarvestSheet {
 
 	protected $_dateColumnLabels = array('Date');
 
-	protected $_removableRowsLabels = array(
-		'Billable?', 'Invoiced?', 'Approved?', 'Employee?', 'Billable Rate',
-		'Billable Amount', 'Cost Rate', 'Cost Amount', 'Currency'
-	);
 
 	/**
  	 * @var PHPExcel
@@ -40,8 +40,7 @@ class HarvestSheet {
 		$this->_excelDoc = $this->_openFile();
 
 		$this->_formatDateColumns();
-		$this->_removeColumns();
-		$this->_destColumn = chr(ord($this->_getSheet()->getHighestColumn()));
+		$this->_updateSheet();
 	}
 
 	public function output() {
@@ -73,6 +72,21 @@ class HarvestSheet {
 			null,
 			$this->_destColumn . self::FIRST_CONTENT_ROW
 		);
+
+		$this->_updateSheet();
+	}
+
+	public function removeColumns(array $columnLabels) {
+		foreach ($columnLabels as $label) {
+			$column = $this->_getHeaderColumn($label);
+			$this->_getSheet()->removeColumn($column, 1);
+		}
+
+		$this->_updateSheet();
+	}
+
+	protected function _updateSheet() {
+		$this->_destColumn = chr(ord($this->_getSheet()->getHighestColumn()));
 	}
 
 	protected function _stripNumber($value) {
@@ -127,12 +141,6 @@ class HarvestSheet {
 		*/
 	}
 
-	protected function _removeColumns() {
-		foreach ($this->_removableRowsLabels as $label) {
-			$column = $this->_getHeaderColumn($label);
-			$this->_getSheet()->removeColumn($column, 1);
-		}
-	}
 
 	/**
  	 * @param String $column	The column letter
