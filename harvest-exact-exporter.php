@@ -17,6 +17,11 @@ class HarvestSheet {
 
 	protected $_dateColumnLabels = array('Date');
 
+	protected $_removableRowsLabels = array(
+		'Billable?', 'Invoiced?', 'Approved?', 'Employee?', 'Billable Rate',
+		'Billable Amount', 'Cost Rate', 'Cost Amount', 'Currency'
+	);
+
 	/**
  	 * @var PHPExcel
  	 */
@@ -33,9 +38,10 @@ class HarvestSheet {
 	public function __construct($path) {
 		$this->_path = $path;
 		$this->_excelDoc = $this->_openFile();
-		$this->_destColumn = chr(ord($this->_getSheet()->getHighestColumn()) +1);
 
 		$this->_formatDateColumns();
+		$this->_removeColumns();
+		$this->_destColumn = chr(ord($this->_getSheet()->getHighestColumn()));
 	}
 
 	public function output() {
@@ -92,11 +98,6 @@ class HarvestSheet {
 		foreach ($columns as $column) {
 			$this->_formatDateColumn($column);
 		}
-
-		//print_r($this->_getHeaderRow());
-		//exit();
-
-
 	}
 
 	/**
@@ -114,6 +115,13 @@ class HarvestSheet {
 		// FORMAT_DATE_DMYSLASH
 		// FORMAT_DATE_DMYMINUS
 		// http://www.cmsws.com/examples/applications/phpexcel/Documentation/API/PHPExcel_Style/PHPExcel_Style_NumberFormat.html#constFORMAT_DATE_DMYSLASH
+	}
+
+	protected function _removeColumns() {
+		foreach ($this->_removableRowsLabels as $label) {
+			$column = $this->_getHeaderColumn($label);
+			$this->_getSheet()->removeColumn($column, 1);
+		}
 	}
 
 	/**
