@@ -14,6 +14,9 @@ class HarvestSheet {
 	const HEADER_ROW = 1;
 	const FIRST_CONTENT_ROW = 2;
 
+
+	protected $_dateColumnLabels = array('Date');
+
 	/**
  	 * @var PHPExcel
  	 */
@@ -31,7 +34,8 @@ class HarvestSheet {
 		$this->_path = $path;
 		$this->_excelDoc = $this->_openFile();
 		$this->_destColumn = chr(ord($this->_getSheet()->getHighestColumn()) +1);
-		//$this->_parseContent();
+
+		$this->_formatDateColumns();
 	}
 
 	public function output() {
@@ -47,20 +51,8 @@ class HarvestSheet {
 		$this->_setDestinationColumnName($destName);
 
 		$oldSrcContent = $this->_getColumnContent($srcColumn);
-		$clean = function($value) {
-			$pattern = '/(\D+)( ?\(\d+\))/i';
-			return trim(preg_replace($pattern, '$1', $value));
-		};
-		$extractNumber = function($value) {
-			if (strpos($value, '(') === false) {
-				return null;
-			}
-			$pattern = '/[a-z \/\&]*(\s*\((\d+)\))?/i';
-			return preg_replace($pattern, '$2', $value);
-		};
-
-		$newSrcContent = array_map($clean, $oldSrcContent);
-		$newDestContent = array_map($extractNumber, $oldSrcContent);
+		$newSrcContent = array_map(array($this, '_stripNumber'), $oldSrcContent);
+		$newDestContent = array_map(array($this, '_extractNumber'), $oldSrcContent);
 		$newSrcColumn = $this->_makeColumn($newSrcContent);
 		$newDestColumn = $this->_makeColumn($newDestContent);
 
@@ -75,6 +67,97 @@ class HarvestSheet {
 			null,
 			$this->_destColumn . self::FIRST_CONTENT_ROW
 		);
+	}
+
+	protected function _stripNumber($value) {
+		$pattern = '/(\D+)( ?\(\d+\))/i';
+		return trim(preg_replace($pattern, '$1', $value));
+	}
+
+	protected function _extractNumber($value) {
+		if (strpos($value, '(') === false) {
+			return null;
+		}
+		$pattern = '/[a-z \/\&]*(\s*\((\d+)\))?/i';
+		return preg_replace($pattern, '$2', $value);
+	}
+
+	protected function _formatDateColumns() {
+		$columns = array();
+
+		foreach ($this->_dateColumnLabels as $label) {
+			$columns[] = $this->_getHeaderColumn($label);
+		}
+
+		foreach ($columns as $column) {
+			$this->_formatDateColumn($column);
+		}
+
+		//print_r($this->_getHeaderRow());
+		//exit();
+
+
+	}
+
+	/**
+ 	 * @param String $column The column letter
+ 	 */
+	protected function _formatDateColumn($column) {
+		$this->_getSheet()
+    		->getStyle(
+				$this->_getColumnContentCoordinates($column)
+			)
+    		->getNumberFormat()
+    		->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_DATE_DDMMYYYY)
+		;
+
+		// FORMAT_DATE_DMYSLASH
+		// FORMAT_DATE_DMYMINUS
+		// http://www.cmsws.com/examples/applications/phpexcel/Documentation/API/PHPExcel_Style/PHPExcel_Style_NumberFormat.html#constFORMAT_DATE_DMYSLASH
+	}
+
+	/**
+ 	 * @param String $column	The column letter
+ 	 * @return String			The coordinates of the content part of the column,
+ 	 *							sans header. For instance: "A2:A599"
+ 	 */
+	protected function _getColumnContentCoordinates($column) {
+		return 
+			$column . self::FIRST_CONTENT_ROW
+			. ':'
+			. $column . $this->_getSheet()->getHighestRow()
+		;
+	}
+
+	/**
+ 	 * Retrieves the header column that corresponds with given label.
+ 	 * @return String The column letter
+ 	 */
+	protected function _getHeaderColumn($label) {
+		$headerRow = $this->_getHeaderRow();
+
+		return array_search($label, $headerRow);
+	}
+
+	/**
+ 	 * Retrieves the cell values in the header row.
+ 	 * @return Array array(
+ 	 *					'A' => 'Column Name 1',
+ 	 *					'B' => 'Column Name 2'
+ 	 *				 )
+ 	 */
+	protected function _getHeaderRow() {
+		$headerCells = array();
+
+		$row = $this->_getSheet()->getRowIterator(self::HEADER_ROW)->current();
+		$cellIterator = $row->getCellIterator();
+		$cellIterator->setIterateOnlyExistingCells(false);
+
+		foreach ($cellIterator as $cell) {
+    		$headerCells[$cell->getColumn()] = $cell->getValue();
+		}
+
+		return $headerCells;
 	}
 
 	protected function _getColumnContent($srcColumn) {
