@@ -109,12 +109,22 @@ class HarvestSheet {
 				$this->_getColumnContentCoordinates($column)
 			)
     		->getNumberFormat()
-    		->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_DATE_DDMMYYYY)
+			->setFormatCode(PHPExcel_Style_NumberFormat::FORMAT_DATE_YYYYMMDD)
 		;
 
-		// FORMAT_DATE_DMYSLASH
-		// FORMAT_DATE_DMYMINUS
-		// http://www.cmsws.com/examples/applications/phpexcel/Documentation/API/PHPExcel_Style/PHPExcel_Style_NumberFormat.html#constFORMAT_DATE_DMYSLASH
+		/*
+
+		Mogelijkheden:
+
+ 		FORMAT_DATE_YYYYMMDD - deze werkt wel, maar geeft jaar slechts in 2 cijfers...
+		FORMAT_DATE_DDMMYYYY - deze werkt wel, maar is misschien verwarrend
+		FORMAT_DATE_DMYSLASH - deze lijkt ook niet te werken
+		FORMAT_DATE_DMYMINUS - deze lijkt niet te werken
+
+		meer op:
+		http://www.cmsws.com/examples/applications/phpexcel/Documentation/API/PHPExcel_Style/PHPExcel_Style_NumberFormat.html#constFORMAT_DATE_DMYSLASH
+
+		*/
 	}
 
 	protected function _removeColumns() {
